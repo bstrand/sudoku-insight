@@ -1,5 +1,9 @@
 __author__ = 'bstrand'
 # Sudoku solver
+#
+# Takes CSV input of sudoku puzzle, writes solution to console output
+# and CSV file named '<puzzle file name>.solution'
+#
 # Terms:
 #   cell  - A square containing a single value
 #   grid  - An entire sudoku puzzle, 9 cells by 9 cells
@@ -50,6 +54,9 @@ def load_puzzle(filename):
         print puzzle
     return puzzle
 
+def write_grid(grid, filename):
+    #grid.tofile(filename, ",")
+    np.savetxt(filename, grid, fmt="%d", delimiter=",")
 
 def is_valid_puzzle(puzzle):
     valid = True
@@ -155,4 +162,5 @@ if __name__ == "__main__":
         if not is_valid_puzzle(puzz):
             print "Invalid puzzle!"
             exit(1)
-        solve_puzzle(puzz)
+        solution = solve_puzzle(puzz)
+        write_grid(solution, puzz_file+".solution")
