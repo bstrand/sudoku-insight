@@ -9,28 +9,36 @@ __author__ = 'bstrand'
 #   Cells are referenced by (row, column) with 0-based indices
 #
 # Usage
-# TODO
-# Takes a
+# sudoku-solver.py [-h] [-w] [-t] [--debug] file [file ...]
+#   -h, --help   show this help message and exit
+#   -w, --watch  Watch a hacky, slightly-better-than-nothing graphical view of
+#                the puzzle being solved.' 'WARNING: significantly slower!
+#   -t, --timer  Track time to solve
+#   --debug      Write debug output.
 #
 
 
 import argparse
 import numpy as np
-import os
+from os import system
+from time import clock
+
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Sudoku solver')
     parser.add_argument('puzzle_files', metavar='file', nargs='+',
                         help='File(s) containing puzzle to solve')
     parser.add_argument("-w", "--watch",
-                        help="Watch a hacky, slightly-better-than-nothing graphical view of the puzzle being solved. WARNING: significantly slower",
+                        help="Watch a hacky, slightly-better-than-nothing graphical view of the puzzle being solved.' \
+                             'WARNING: significantly slower!",
                         action="store_true")
+    parser.add_argument("-t", "--timer", help="Track time to solve", action="store_true")
     parser.add_argument("--debug", help="Write debug output.", action="store_true")
     args = parser.parse_args()
     if args.debug:
         print "Args parsed."
         print "Puzzle files: "
-        for filename in arguments.puzzle_files:
+        for filename in args.puzzle_files:
             print "\t", filename
     return args
 
@@ -63,8 +71,20 @@ def is_valid_puzzle(puzzle):
 
 
 def solve_puzzle(grid):
-    orig_grid = grid.copy()  # TODO necessary?
-    return solve_puzzle_recurse(grid)
+
+    if args.timer:
+        start = clock()
+    complete, solution = solve_puzzle_recurse(grid)
+    if args.timer:
+        elapsed = clock() - start
+    if complete:
+        print "\n-------SOLVED--------"
+        print solution
+    else:
+        print "No solution found. =/"
+    if args.timer:
+        print "\nElapsed time = %.2f sec" % elapsed
+    return solution
 
 
 def solve_puzzle_recurse(grid):
@@ -77,23 +97,21 @@ def solve_puzzle_recurse(grid):
     """
 
     if args.watch:
-        os.system('clear')
+        system('clear')
         print grid
 
     blank = find_blank_cell(grid)
     if not blank:
-        print "-------SOLVED--------"
-        if not args.watch:
-            print grid
-        return True
+        return True, grid
 
-    for v in range(1,10):
+    for v in range(1, 10):
         grid[blank] = v
         if is_cell_valid(grid, blank):
-            solution = solve_puzzle_recurse(np.copy(grid))
-            if solution:
-                return solution
-    return False
+            complete, solution = solve_puzzle_recurse(np.copy(grid))
+            if complete:
+                return True, solution
+
+    return False, grid
 
 
 def is_cell_valid(grid, cell):
@@ -109,7 +127,7 @@ def is_cell_valid(grid, cell):
     # Check cell's block for other cells with this value
     block = [(i, j) for i in range(3*(col/3), 3+3*(col/3)) for j in range(3*(row/3), 3+3*(row/3))]
     for neighbor in block:
-        if(grid[neighbor] == grid[cell] and neighbor != cell):
+        if grid[neighbor] == grid[cell] and neighbor != cell:
             return False
 
     if args.debug:
@@ -136,6 +154,5 @@ if __name__ == "__main__":
         puzz = load_puzzle(puzz_file)
         if not is_valid_puzzle(puzz):
             print "Invalid puzzle!"
-            exit
-        if not solve_puzzle(puzz):
-            print "No solution found. =/"
+            exit(1)
+        solve_puzzle(puzz)
