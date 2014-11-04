@@ -18,25 +18,26 @@ import argparse
 import numpy as np
 import os
 
-debug = True
-
-
 def parse_args():
     parser = argparse.ArgumentParser(description='Sudoku solver')
     parser.add_argument('puzzle_files', metavar='file', nargs='+',
                         help='File(s) containing puzzle to solve')
-    arguments = parser.parse_args()
-    if debug:
+    parser.add_argument("-w", "--watch",
+                        help="Watch a hacky, slightly-better-than-nothing graphical view of the puzzle being solved. WARNING: significantly slower",
+                        action="store_true")
+    parser.add_argument("--debug", help="Write debug output.", action="store_true")
+    args = parser.parse_args()
+    if args.debug:
         print "Args parsed."
-        print "arguments.puzzle_files: "
-        for fn in arguments.puzzle_files:
-            print "\t", fn
-    return arguments
+        print "Puzzle files: "
+        for filename in arguments.puzzle_files:
+            print "\t", filename
+    return args
 
 
 def load_puzzle(filename):
     puzzle = np.loadtxt(filename, dtype=int, delimiter=',')
-    if debug:
+    if args.debug:
         print "Puzzle file %s loaded, shape: %r" % (filename, puzzle.shape)
         print puzzle
     return puzzle
@@ -44,10 +45,12 @@ def load_puzzle(filename):
 
 def is_valid_puzzle(puzzle):
     valid = True
+
     # 9x9 grid
     if puzzle.shape != (9, 9):
         print "Invalid puzzle grid, must be 9x9"
         valid = False
+
     # Valid cell values are integers 0-9
     it = np.nditer(puzzle, flags=['multi_index'])
     while not it.finished:
@@ -73,14 +76,15 @@ def solve_puzzle_recurse(grid):
     :return: Solved grid or False if unresolvable
     """
 
-#    os.system('clear')
-#    print grid
+    if args.watch:
+        os.system('clear')
+        print grid
 
     blank = find_blank_cell(grid)
     if not blank:
-        print "___SOLVED___"
-        print grid
-        print "____________"
+        print "-------SOLVED--------"
+        if not args.watch:
+            print grid
         return True
 
     for v in range(1,10):
@@ -94,10 +98,7 @@ def solve_puzzle_recurse(grid):
 
 def is_cell_valid(grid, cell):
     (col, row) = cell
-    # TODO Remove
-    # if debug:
-    #    print "Cell (%d, %d) == %d" % (col, row, grid[cell])
-    #    print "is_cell_valid(grid, %d, %d, %d)" % (col, row, grid[cell])
+
     # Check column & row for other cells with this value
     for i in range(9):
         if grid[i][row] == grid[cell] and col != i:
@@ -111,7 +112,7 @@ def is_cell_valid(grid, cell):
         if(grid[neighbor] == grid[cell] and neighbor != cell):
             return False
 
-    if debug:
+    if args.debug:
         print "%d -> (%d, %d)" % (grid[cell], col, row)
     return True
 
@@ -120,8 +121,6 @@ def find_blank_cell(grid):
     it = np.nditer(grid, flags=['multi_index'])
     while not it.finished:
         if it[0] == 0:
-            #if debug:
-            #    print "Blank cell found at (%d, %d)" % it.multi_index
             return it.multi_index
         it.iternext()
 
